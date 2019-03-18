@@ -37,7 +37,7 @@ def Encrypt(b, k):
 	# podaljšamo besedilo, če ne ustreza kluču
 	if len(b) % 2 != 0:
 		b += 'A'
-	
+
 	for i in range(len(b) // 2):
 		letter1 = getNum(b[2*i])
 		letter2 = getNum(b[2*i+1])
@@ -48,5 +48,7 @@ def Encrypt(b, k):
 	return c
 
 def Decrypt(c, k):
-        key = invKey(k)
-        return Encrypt(c, key)
+	k_num = [getNum(k[0]), getNum(k[1]), getNum(k[2]), getNum(k[3])]
+	key_num = invKey(k_num)
+	key = [ALPHABET[key_num[0]], ALPHABET[key_num[1]], ALPHABET[key_num[2]], ALPHABET[key_num[3]]]
+	return Encrypt(c, key)

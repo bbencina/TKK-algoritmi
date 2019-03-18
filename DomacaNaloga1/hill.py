@@ -52,3 +52,7 @@ def Decrypt(c, k):
 	key_num = invKey(k_num)
 	key = [ALPHABET[key_num[0]], ALPHABET[key_num[1]], ALPHABET[key_num[2]], ALPHABET[key_num[3]]]
 	return Encrypt(c, key)
+
+def BreakHill(c):
+	'''Decrypts the Hill cipher using most common 4-grams in the English language.'''
+	return

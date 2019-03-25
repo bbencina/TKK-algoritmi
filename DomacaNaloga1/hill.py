@@ -1,5 +1,6 @@
 ### -IMPORTS- ###
 from itertools import permutations
+import time
 
 ### -GLOBAL STRUCTURES- ###
 ALPHABET = ['A', 'B', 'C', 'D', 'E', 'F',
@@ -32,20 +33,6 @@ WORDLIST = ['THAT', 'THIS', 'ITIS', 'VERY', 'MANY', 'WITH',
             'MATH']
 
 ### -AUXILIARY FUNCTIONS- ###
-
-
-def giveWord():
-        '''Generator of English 4-grams.'''
-        for a in range(L):
-                for b in range(L):
-                        for c in range(L):
-                                for d in range(L):
-                                        A = ALPHABET[a]
-                                        B = ALPHABET[b]
-                                        C = ALPHABET[c]
-                                        D = ALPHABET[d]
-                                        word = A+B+C+D
-                                        yield word
 
 
 def getNum(letter):
@@ -83,11 +70,25 @@ def prodMat(A, B):
         d = (A[2] * B[1] + A[3] * B[3]) % L
         return [a, b, c, d]
 
-# not needed in new version of the solution
 def isInvMat(A):
         '''Checks if the matrix given is invertible'''
         det = A[0] * A[3] - A[1] * A[2]
         return extendedEuclid(det, L)[2] == 1
+
+def giveWord():
+        '''Generator of English 4-grams.'''
+        for a in range(L):
+                for b in range(L):
+                        for c in range(L):
+                                for d in range(L):
+                                        A = ALPHABET[a]
+                                        B = ALPHABET[b]
+                                        C = ALPHABET[c]
+                                        D = ALPHABET[d]
+                                        word = A+B+C+D
+                                        if not isInvMat([a, b, c, d]):
+                                                continue
+                                        yield word
 
 ### -ANALYSIS FUNCTIONS- ###
 
@@ -208,5 +209,8 @@ XBMHHMWAAZWGJJAHSSWKVJANANXFVMAFSENLHMWBLZNDHM\
 SBUJMNALWUFRSXWDMFWSVBTHLLJTYOSQWHYAGJHDJTXNNST\
 VMXTVJH'
 
+t1 = time.time()
 BreakHill(c)
+t2 = time.time()
+print('## TIME NEEDED: ', t2 - t1, 'seconds')
 

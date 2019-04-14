@@ -10,6 +10,9 @@ ALPHABET = ['A', 'B', 'C', 'D', 'E', 'F',
 
 L = len(ALPHABET)
 
+# tolerance for frequency analysis - calibrate as needed
+TOL = 0.05
+
 # frequency of letters in the English language (in %)
 # source: http://pi.math.cornell.edu/~mec/2003-2004/cryptography/subs/frequencies.html
 FREQUENCY = {'A': 8.12, 'B': 1.49, 'C': 2.71, 'D': 4.32, 'E': 12.02, 'F': 2.3,
@@ -46,10 +49,15 @@ WORDLIST_COMMON = ['THAT', 'THIS', 'ITIS', 'VERY', 'MANY',
 # compiled by me with help by:
 # src: https://www.enchantedlearning.com/wordlist/science.shtml
 WORDLIST_PROF = ['GRAPHY', 'OLOGY', 'MATH', 'SCIENCE', 'PROFESSOR',
-                 'EXPERIMENT', 'WARE', 'THESIS', 'ATORY', 'THEORY',
-                 'FIELD']
+                 'WARE', 'THESIS', 'ATORY', 'THEORY',
+                 'FIELD', 'CATION', 'GRAPH', 'INFORMATION']
 
 WORDLIST = WORDLIST_COMMON + WORDLIST_PROF
+
+# the wordlist should have longer words first, as they are more reliable
+# statistically and consume less iterations through text
+WORDLIST.sort(key = lambda s:len(s))
+WORDLIST = WORDLIST[::-1]
 
 
 ### AUXILIARY FUNCTIONS ###
@@ -103,6 +111,7 @@ def allBitSeq(n):
                 yield seq
 
 def wordToBits(w):
+        '''Turns letters into a bit sequence of 5 bits per letter.'''
         bits = ''
         for c in w:
                 b = decToBin(getNum(c))
@@ -118,13 +127,15 @@ def breakInFive(b):
         return sez
 
 def bitsToWord(b):
+        '''Inverse of wordToBits. Suppose every letter takes 5 bits of space.
+                Turns such bit sequences back into letters.'''
         sez = breakInFive(b)
         w = ''
         for c in sez:
                 try:
                         w += ALPHABET[binToDec(c)]
                 except:
-                        print('IndexOutOfBounds: Try a different key.')
+##                        print('IndexOutOfBounds: Try a different key.')
                         return None
         return w
 
@@ -140,6 +151,19 @@ def matching(seq1, seq2):
                 if seq1[i] == seq2[i]:
                         count += 1
         return count / len(seq1)
+
+def frequencyAnalysis(b):
+        '''Returns index of error of given text based on the known frequencies
+                of letters in the English language.'''
+        frequencies = {}
+        for letter in ALPHABET:
+                frequencies[letter] = 0
+        for l in b:
+                frequencies[l] += 1
+        index = 0
+        for l in ALPHABET:
+                index += (FREQUENCY[l] / 100 - frequencies[l] / len(b)) ** 2
+        return index
 
 ### MAIN FUNCTIONS ###
 
@@ -188,46 +212,89 @@ def Geffe(x1, x2, x3):
                 zap += str(bit % 2)
         return zap
 
-def BreakGeffe(c):
-        w = 'CRYPTOGRAPHY'
-        b = wordToBits(w)
-        n = len(b)
-        z = xor(b, c[:len(b)])
+def BreakGeffe(c, WLIST = WORDLIST):
+        '''Performs a know-plaintext correlation attack on the Geffe generator.
+                Rolls every word in the wordlist through the ciphertext,
+                calculates the key candidate and uses the statistical weakness
+                of the generator function to calculate the key.
+                We notice the plaintext guess was wrong when turning bits to
+                letters leads to an indexation error or with the help of
+                frequency analysis.
+                If the wordlist contains only one word we know for sure is at the
+                very begining of the text, this function is equivalent to a basic
+                correlation attack. Thus as we know the word 'CRYPTOGRAPHY' is the
+                first word of our plaintext, one can substitute WORDLIST for
+                ['CRYPTOGRAPHY'] and yield positive results.'''
+        for w in WLIST:
+                b = wordToBits(w)
+                n = len(b)
+                # if the word is longer than the ciphertext then it's surely not
+                # in the text
+                if len(c) < n:
+                        continue
+                print('Testing word: ', w)
+                # rolling the word over the ciphertext
+                for i in range(len(c)//5 - n//5 + 1):
+                        print('.', end=' ')
+                        # key candidate at the current marker of length n
+                        z = xor(b, c[i*5:n+i*5])
 
-        x1s = []
-        for seed in allBitSeq(5):
-                x = LFSR_1(seed, n)
-                m_coef = matching(x, z)
-##                print("Testing1: ", seed, m_coef)
-                if m_coef > 0.7:
-                        print('Success in LFSR1, seed: ', seed)
-                        x1s.append(seed)
+                        # correlation attack:
+                        # which x1 match z cca. 3/4 of the time?
+                        x1s = []
+                        for seed in allBitSeq(5):
+                                x = LFSR_1(seed, n+i*5)
+                                m_coef = matching(x[i*5:n+i*5], z)
+                ##                print("Testing1: ", seed, m_coef)
+                                if m_coef > 0.7:
+##                                        print('Success in LFSR1, seed: ', seed)
+                                        x1s.append(seed)
 
-        x3s = []
-        for seed in allBitSeq(11):
-                x = LFSR_3(seed, n)
-                m_coef = matching(x, z)
-##                print("Testing3: ", seed, m_coef)
-                if m_coef > 0.7:
-                        print('Success in LFSR3, seed: ', seed)
-                        x3s.append(seed)
+                        # which x3 match z cca. 3/4 of the time?
+                        x3s = []
+                        for seed in allBitSeq(11):
+                                x = LFSR_3(seed, n+i*5)
+                                m_coef = matching(x[i*5:n+i*5], z)
+                ##                print("Testing3: ", seed, m_coef)
+                                if m_coef > 0.74:
+##                                        print('Success in LFSR3, seed: ', seed)
+                                        x3s.append(seed)
 
-        x2 = None
-        for seed in allBitSeq(7):
-                for x1 in x1s:
-                        for x3 in x3s:
-                                x = LFSR_2(seed, n)
-                                z_cand = Geffe(LFSR_1(x1, n), x, LFSR_3(x3, n))
-                                if z_cand == z:
-                                        x2 = seed
-                                        l = len(c)
-                                        key = Geffe(LFSR_1(x1, l), LFSR_2(x2, l), LFSR_3(x3, l))
-                                        plaintext = xor(c, key)
-                                        print('Key found: ', x1, x2, x3)
-                                        print('Decrypted text:')
-                                        print(bitsToWord(plaintext))
-                                        return (x1, x2, x3)
-        print('DecipheringError: Something went wrong.')
+                        # now for the final key piece: x2
+                        x2 = None
+                        for seed in allBitSeq(7):
+                                for x1 in x1s:
+                                        for x3 in x3s:
+                                                x = LFSR_2(seed, n+i*5)
+                                                # make key candidate for current (x1, x2, x3)
+                                                z_cand = Geffe(LFSR_1(x1, n+i*5), x, LFSR_3(x3, n+i*5))
+                                                # does it match the guessed key?
+                                                if z_cand[i*5:n+i*5] == z:
+                                                        x2 = seed
+                                                        l = len(c)
+                                                        # make key for the whole ciphertext
+                                                        key = Geffe(LFSR_1(x1, l), LFSR_2(x2, l), LFSR_3(x3, l))
+                                                        # decrypt with calculated key
+                                                        plaintext_bit = xor(c, key)
+                                                        # check for errors
+                                                        try:
+                                                                # does it transate to letters?
+                                                                # not all bit combinations are valid
+                                                                # as an alphabet index
+                                                                plaintext = bitsToWord(plaintext_bit)
+                                                                # if it succeded, check if the language
+                                                                # is English
+                                                                index = frequencyAnalysis(plaintext)
+                                                                if index > TOL:
+                                                                        continue
+                                                        except:
+                                                                continue
+                                                        # if all is well then return
+                                                        print('\nKey found: ', x1, x2, x3)
+                                                        print('Decrypted text:')
+                                                        print(plaintext)
+                                                        return (x1, x2, x3, plaintext)
+        print('DecipheringError: Something went wrong. Try updating the wordlist or lowering the tolerance.')
         return None
 
 
@@ -238,4 +305,18 @@ ciphertext = ''
 with open(file_name, 'r') as dat:
         ciphertext = dat.read()
 
+# proof it works
+print('## TEST 1:')
+BreakGeffe(ciphertext, ['CRYPTOGRAPHY'])
+
+
+# Interesting:
+# While attacking with the word 'prior' did not yield positive results,
+# the word 'the' succeded almost instantly despite being only 3 letters
+# long and not at all specific to the text.
+print('## TEST 2:')
+BreakGeffe(ciphertext, ['THE'] + WORDLIST)
+
+# if you like waiting
+print('## TEST 3:')
 BreakGeffe(ciphertext)

@@ -1,4 +1,5 @@
 ### IMPORTS ###
+import time
 
 ### GLOBAL STRUCTURES ###
 ALPHABET = ['A', 'B', 'C', 'D', 'E', 'F',
@@ -9,8 +10,6 @@ ALPHABET = ['A', 'B', 'C', 'D', 'E', 'F',
 
 L = len(ALPHABET)
 
-# tolerance of statistical matching
-TOL = 0.05
 
 ### AUXILIARY FUNCTIONS ###
 def getNum(letter):
@@ -84,7 +83,7 @@ def bitsToWord(b):
                 try:
                         w += ALPHABET[binToDec(c)]
                 except:
-                        print('IndexOutOfBounds: Try different key.')
+                        print('IndexOutOfBounds: Try a different key.')
                         return None
         return w
 
@@ -108,8 +107,8 @@ def LFSR_1(s,n):
                 Length of seed will always be 5 and n>5.
                 x[i+5] = x[i+2] + x[i]'''
         zap = s
-        for i in range(n-len(s)):
-                bit = (int(zap[i-3]) + int(zap[i-5])) % 2
+        for i in range(len(s),n):
+                bit = (int(zap[i-2]) + int(zap[i-5])) % 2
                 zap += str(bit)
         return zap
 
@@ -118,8 +117,8 @@ def LFSR_2(s,n):
                 Length of seed will always be 7 and n>7.
                 x[i+7] = x[i+1] + x[i]'''
         zap = s
-        for i in range(n-len(s)):
-                bit = (int(zap[i-6]) + int(zap[i-7])) % 2
+        for i in range(len(s),n):
+                bit = (int(zap[i-1]) + int(zap[i-7])) % 2
                 zap += str(bit)
         return zap
 
@@ -128,8 +127,8 @@ def LFSR_3(s,n):
                 Length of seed will always be 11 and n>11.
                 x[i+11] = x[i+2] + x[i]'''
         zap = s
-        for i in range(n-len(s)):
-                bit = (int(zap[i-3]) + int(zap[i-5])) % 2
+        for i in range(len(s),n):
+                bit = (int(zap[i-2]) + int(zap[i-11])) % 2
                 zap += str(bit)
         return zap
 
@@ -151,56 +150,51 @@ def Geffe(x1, x2, x3):
 def BreakGeffe(c):
         w = 'CRYPTOGRAPHY'
         b = wordToBits(w)
-        print(b, len(b))
         n = len(b)
         z = xor(b, c[:len(b)])
 
-        x1 = None
+        x1s = []
         for seed in allBitSeq(5):
                 x = LFSR_1(seed, n)
                 m_coef = matching(x, z)
-                print("Testing1: ", seed, m_coef)
-                if abs(m_coef - 0.65) < TOL:
-                        x1 = seed
+##                print("Testing1: ", seed, m_coef)
+                if m_coef > 0.7:
                         print('Success in LFSR1, seed: ', seed)
-                        #break
+                        x1s.append(seed)
 
-        x3 = None
+        x3s = []
         for seed in allBitSeq(11):
                 x = LFSR_3(seed, n)
                 m_coef = matching(x, z)
-                if abs(m_coef - 0.75) < TOL:
-                        x3 = seed
+##                print("Testing3: ", seed, m_coef)
+                if m_coef > 0.7:
                         print('Success in LFSR3, seed: ', seed)
-                        #break
+                        x3s.append(seed)
 
         x2 = None
         for seed in allBitSeq(7):
-                x = LFSR_2(seed, n)
-                z_cand = Geffe(LFSR_1(x1, n), x, LFSR_3(x3, n))
-                m_coef = matching(z_cand, z)
-                print("Testing2: ", seed, m_coef)
-                if abs(m_coef - 0.75) < TOL:
-                        x2 = seed
-                        print('Success in LFSR2, seed: ', seed)
-                        #break
-        
-        if x1 == None or x2 == None or x3 == None:
-                print('DecryptionError: One seed not found.')
-                return None
+                for x1 in x1s:
+                        for x3 in x3s:
+                                x = LFSR_2(seed, n)
+                                z_cand = Geffe(LFSR_1(x1, n), x, LFSR_3(x3, n))
+                                if z_cand == z:
+                                        x2 = seed
+                                        l = len(c)
+                                        key = Geffe(LFSR_1(x1, l), LFSR_2(x2, l), LFSR_3(x3, l))
+                                        plaintext = xor(c, key)
+                                        print('Key found: ', x1, x2, x3)
+                                        print('Decrypted text:')
+                                        print(bitsToWord(plaintext))
+                                        return (x1, x2, x3)
+        print('DecipheringError: Something went wrong.')
+        return None
 
-        l = len(c)
-        key = Geffe(LFSR_1(x1, l), LFSR_2(x2, l), LFSR_3(x3, l))
-        plaintext = xor(c, key)
-        print('Key found: ', x1, x2, x3)
-        print('Decrypted text:')
-        print(bitsToWord(plaintext))
 
 ### TESTS ###
 
 file_name = 'geffe.txt'
 ciphertext = ''
 with open(file_name, 'r') as dat:
-        for line in dat:
-                ciphertext += line
+        ciphertext = dat.read()
+
 BreakGeffe(ciphertext)

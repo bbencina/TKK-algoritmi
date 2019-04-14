@@ -10,6 +10,47 @@ ALPHABET = ['A', 'B', 'C', 'D', 'E', 'F',
 
 L = len(ALPHABET)
 
+# frequency of letters in the English language (in %)
+# source: http://pi.math.cornell.edu/~mec/2003-2004/cryptography/subs/frequencies.html
+FREQUENCY = {'A': 8.12, 'B': 1.49, 'C': 2.71, 'D': 4.32, 'E': 12.02, 'F': 2.3,
+             'G': 2.03, 'H': 5.92, 'I': 7.31, 'J': 0.1, 'K': 0.69, 'L': 3.98,
+             'M': 2.61, 'N': 6.95, 'O': 7.68, 'P': 1.82, 'Q': 0.11, 'R': 6.02,
+             'S': 6.28, 'T': 9.10, 'U': 2.88, 'V': 1.11, 'W': 2.09, 'X': 0.17,
+             'Y': 2.11, 'Z': 0.07}
+
+# wordlists of common words divided by context
+# all words are at least 4 letters (20 bits) long for better matching
+
+# some of the most common words in the English language
+# compiled by me with help by:
+# src: https://en.wikipedia.org/wiki/Most_common_words_in_English
+WORDLIST_COMMON = ['THAT', 'THIS', 'ITIS', 'VERY', 'MANY',
+            'HAVE', 'WILL', 'YOUR', 'FROM', 'THEY', 'KNOW',
+            'BEEN', 'GOOD', 'MUCH', 'SOME', 'TIME', 'ABLE',
+            'LIFE', 'LOVE', 'LIVE', 'SELF', 'OVER', 'DONT',
+            'WITH', 'WOULD', 'THERE', 'THEIR', 'WHAT', 'ABOUT',
+            'WHICH', 'WHEN', 'THAN', 'THEN', 'MAKE', 'LIKE',
+            'TIME', 'JUST', 'TAKE', 'PEOPLE', 'INTO', 'YEAR',
+            'COULD', 'THEM', 'OTHER', 'LOOK', 'ONLY', 'COME',
+            'THINK', 'ALSO', 'BACK', 'AFTER', 'WORK', 'FIRST',
+            'WELL', 'EVEN', 'WANT', 'BECAUSE', 'CAUSE', 'THESE',
+            'GIVE', 'MOST', 'PERSON', 'THING', 'WORLD', 'HAND',
+            'PART', 'CHILD', 'WOMAN', 'WOMEN', 'PLACE', 'WEEK',
+            'CASE', 'POINT', 'GOVERNMENT', 'COMPANY', 'NUMBER',
+            'GROUP', 'PROBLEM', 'FACT', 'LAST', 'LONG', 'GREAT',
+            'LITTLE', 'RIGHT', 'HIGH', 'DIFFERENT', 'SMALL', 'LARGE',
+            'NEXT', 'EARLY', 'YOUNG', 'IMPORTANT', 'PUBLIC',
+            'PRIVATE', 'SAME']
+
+# some common scientific words, mainly containing common word endings
+# compiled by me with help by:
+# src: https://www.enchantedlearning.com/wordlist/science.shtml
+WORDLIST_PROF = ['GRAPHY', 'OLOGY', 'MATH', 'SCIENCE', 'PROFESSOR',
+                 'EXPERIMENT', 'WARE', 'THESIS', 'ATORY', 'THEORY',
+                 'FIELD']
+
+WORDLIST = WORDLIST_COMMON + WORDLIST_PROF
+
 
 ### AUXILIARY FUNCTIONS ###
 def getNum(letter):

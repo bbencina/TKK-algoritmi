@@ -26,7 +26,7 @@ FREQUENCY = {'A': 8.12, 'B': 1.49, 'C': 2.71, 'D': 4.32, 'E': 12.02, 'F': 2.3,
 
 # some of the most common words in the English language
 # compiled by me with help by:
-# src: https://en.wikipedia.org/wiki/Most_common_words_in_English
+# source: https://en.wikipedia.org/wiki/Most_common_words_in_English
 WORDLIST_COMMON = ['THAT', 'THIS', 'ITIS', 'VERY', 'MANY',
             'HAVE', 'WILL', 'YOUR', 'FROM', 'THEY', 'KNOW',
             'BEEN', 'GOOD', 'MUCH', 'SOME', 'TIME', 'ABLE',
@@ -47,7 +47,7 @@ WORDLIST_COMMON = ['THAT', 'THIS', 'ITIS', 'VERY', 'MANY',
 
 # some common scientific words, mainly containing common word endings
 # compiled by me with help by:
-# src: https://www.enchantedlearning.com/wordlist/science.shtml
+# source: https://www.enchantedlearning.com/wordlist/science.shtml
 WORDLIST_PROF = ['GRAPHY', 'OLOGY', 'MATH', 'SCIENCE', 'PROFESSOR',
                  'WARE', 'THESIS', 'ATORY', 'THEORY',
                  'FIELD', 'CATION', 'GRAPH', 'INFORMATION']
@@ -169,8 +169,7 @@ def frequencyAnalysis(b):
 
 def LFSR_1(s,n):
         '''Generates lfsr1 sequence with seed s of length n.
-                Length of seed will always be 5 and n>5.
-                x[i+5] = x[i+2] + x[i]'''
+                Length of seed will always be 5 and n>5.'''
         zap = s
         for i in range(len(s),n):
                 bit = (int(zap[i-2]) + int(zap[i-5])) % 2
@@ -179,8 +178,7 @@ def LFSR_1(s,n):
 
 def LFSR_2(s,n):
         '''Generates lfsr2 sequence with seed s of length n.
-                Length of seed will always be 7 and n>7.
-                x[i+7] = x[i+1] + x[i]'''
+                Length of seed will always be 7 and n>7.'''
         zap = s
         for i in range(len(s),n):
                 bit = (int(zap[i-1]) + int(zap[i-7])) % 2
@@ -189,8 +187,7 @@ def LFSR_2(s,n):
 
 def LFSR_3(s,n):
         '''Generates lfsr3 sequence with seed s of length n.
-                Length of seed will always be 11 and n>11.
-                x[i+11] = x[i+2] + x[i]'''
+                Length of seed will always be 11 and n>11.'''
         zap = s
         for i in range(len(s),n):
                 bit = (int(zap[i-2]) + int(zap[i-11])) % 2
@@ -220,7 +217,8 @@ def Geffe(x1, x2, x3):
 #   version generates sequences of necesarry length during the attack.
 # - One of main consequences of this is that the memory-heavy version
 #   works fast on longer words (hence the sorting of the wordlist by
-#   length in descending order), yet works painfully slow on slow words.
+#   length in descending order), yet works painfully slow on short words.
+#   (Actually fixed it a bit but not much - refer to the tests.)
 #   The time-heavy version works with about the same speed regardless
 #   of word length but is a bit slower on average.
 
@@ -232,12 +230,12 @@ def BreakGeffe(c, WLIST = WORDLIST):
                 of the generator function to calculate the key.
                 We notice the plaintext guess was wrong when turning bits to
                 letters leads to an indexation error or with the help of
-                frequency analysis.
+                frequency analysis (try-except statement).
                 If the wordlist contains only one word we know for sure is at the
                 very begining of the text, this function is equivalent to a basic
                 correlation attack. Thus as we know the word 'CRYPTOGRAPHY' is the
                 first word of our plaintext, one can substitute WORDLIST for
-                ['CRYPTOGRAPHY'] and yield positive results.'''
+                ['CRYPTOGRAPHY'] and yield positive results (refer to the tests).'''
         for w in WLIST:
                 b = wordToBits(w)
                 n = len(b)
@@ -253,17 +251,17 @@ def BreakGeffe(c, WLIST = WORDLIST):
                         z = xor(b, c[i*5:n+i*5])
 
                         # correlation attack:
-                        # which x1 match z cca. 3/4 of the time?
+                        # which x1s match z cca. 3/4 of the time?
                         x1s = []
                         for seed in allBitSeq(5):
                                 x = LFSR_1(seed, n+i*5)
                                 m_coef = matching(x[i*5:n+i*5], z)
                 ##                print("Testing1: ", seed, m_coef)
-                                if m_coef > 0.7:
+                                if m_coef > 0.74:
 ##                                        print('Success in LFSR1, seed: ', seed)
                                         x1s.append(seed)
 
-                        # which x3 match z cca. 3/4 of the time?
+                        # which x3s match z cca. 3/4 of the time?
                         x3s = []
                         for seed in allBitSeq(11):
                                 x = LFSR_3(seed, n+i*5)
@@ -276,6 +274,9 @@ def BreakGeffe(c, WLIST = WORDLIST):
                         # now for the final key piece: x2
                         x2 = None
                         for seed in allBitSeq(7):
+                                # checking all candidates - when calibrated properly
+                                # there is 1 x1 and about 4-5 x3s, so these 2 nested
+                                # loops are of little concern
                                 for x1 in x1s:
                                         for x3 in x3s:
                                                 x = LFSR_2(seed, n+i*5)
@@ -357,7 +358,7 @@ def BreakGeffe2(c, WLIST = WORDLIST):
                         for s in lfsr1:
                                 m_coef = matching(lfsr1[s][i*5:n+i*5], z)
                 ##                print("Testing1: ", seed, m_coef)
-                                if m_coef > 0.7:
+                                if m_coef > 0.74:
 ##                                        print('Success in LFSR1, seed: ', seed)
                                         x1s.append(s)
 
@@ -373,6 +374,9 @@ def BreakGeffe2(c, WLIST = WORDLIST):
                         # now for the final key piece: x2
                         x2 = None
                         for s in lfsr2:
+                                # same as in the version above, if calibrated
+                                # properly there is 1 x1 and about 4-5 x3s, so
+                                # the 2 nested loops are of little concern
                                 for s1 in x1s:
                                         for s3 in x3s:
                                                 # make key candidate for current (x1, x2, x3)
@@ -414,31 +418,53 @@ ciphertext = ''
 with open(file_name, 'r') as dat:
         ciphertext = dat.read()
 
+print('## WARNING: The tests will run for about 5 minutes.')
+
 # FIRST THE MEMORY-HEAVY VERSION
 # works great on longer words but is painfully slow on shorter ones
 
 # proof it works
-print('## TEST 1:')
+t = time.time()
+print('## TEST 1: memory-heavy, it works')
 BreakGeffe2(ciphertext, ['CRYPTOGRAPHY'])
+print('Test finished in ' + str(time.time()-t) + ' seconds.')
+time.sleep(2)
+
+# shorter words
+t = time.time()
+print('## TEST2: memory-heavy, short word')
+BreakGeffe2(ciphertext, ['THE'] + WORDLIST)
+print('Test finished in ' + str(time.time()-t) + ' seconds.')
+time.sleep(2)
 
 # longer words
-print('## TEST 2:')
+t = time.time()
+print('## TEST 3: memory-heavy, long words')
 BreakGeffe2(ciphertext)
+print('Test finished in ' + str(time.time()-t) + ' seconds.')
+time.sleep(2)
 
 # SECOND THE TIME-HEAVY VERSION
 
 # proof it works
-print('## TEST 3:')
+t = time.time()
+print('## TEST 4: time-heavy, it works')
 BreakGeffe(ciphertext, ['CRYPTOGRAPHY'])
-
+print('Test finished in ' + str(time.time()-t) + ' seconds.')
+time.sleep(2)
 
 # Interesting:
 # While attacking with the word 'prior' did not yield positive results,
 # the word 'the' succeded almost instantly (first occurance) despite being
-# only 3 letters long and not at all specific to the text.
-print('## TEST 4:')
+# only 3 letters (15 bits) long and not at all specific to the text.
+t = time.time()
+print('## TEST 5: time-heavy, short word')
 BreakGeffe(ciphertext, ['THE'] + WORDLIST)
+print('Test finished in ' + str(time.time()-t) + ' seconds.')
+time.sleep(2)
 
 # if you like waiting
-print('## TEST 5:')
+t = time.time()
+print('## TEST 6: time-heavy, long words - if you enjoy waiting a bit')
 BreakGeffe(ciphertext)
+print('Test finished in ' + str(time.time()-t) + ' seconds.')

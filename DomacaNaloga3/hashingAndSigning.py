@@ -202,7 +202,7 @@ while True:
     h = sha1hash(block + str(ext))
     if str(h[0:7]) == '0000000' and str(h[7]) in {'0', '1', '2', '3'}:
         print('SUCCESS!')
-        block = block + ext
+        block = block + str(ext)+'\n'+str(h)
         break
     ext += 1
 

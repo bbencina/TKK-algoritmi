@@ -16,14 +16,14 @@ def extendedEuclid(a, b, n):
         return (s1 % n, t1 % n, r1)
 
 def invEnt(ent, n):
-	'''Multiplicative inverse of an element in Z_L'''
+	'''Multiplicative inverse of an element in Z_n'''
 	return extendedEuclid(ent, n, n)[0]
 
 ### CRYPTOGRAPHIC FUNCTIONS ###
 
 def sha1hash(s, encoding='utf-8'):
     '''Returns sha1 hash digest of s. On the internet some people
-        recommend handling encoding.'''
+        recommend handling encoding as well.'''
     return sha1(s.encode(encoding)).hexdigest()
 
 def MillerRabin(n, k = 10):
@@ -40,7 +40,7 @@ def MillerRabin(n, k = 10):
 
     # witness loop start
     for i in range(k):
-        # random number
+        # random potential witness
         a = randint(2, n-2)
         #print('Testing witness: ' + str(a))
         if extendedEuclid(a, n, n)[2] != 1:
@@ -61,12 +61,12 @@ def MillerRabin(n, k = 10):
         #print(' ')
         if not flag:
             return False
-    # probably a prime number
+    # probably a prime number - increase k or run again to be sure
     return True
 
-def largePrime(b, tries=1000, mrt = 10):
+def largePrime(b, tries=1000, mrt = 100):
     '''Generates large prime with b bits. Tries k times. Runs primality
-        test with mrt witnesses.'''
+        test with mrt random witnesses.'''
     for i in range(tries):
         n = randint(pow(2, b-1), pow(2, b)-1)
         if MillerRabin(n, mrt):
@@ -76,26 +76,29 @@ def largePrime(b, tries=1000, mrt = 10):
 
 ### MAIN FUNCTIONS ###
 
+# refer to the tests section for some collision (bottom)
 def FindCollision11(hs = {}):
     HDICT11 = hs
 
     # how many searches?
-    # the birthday paradox tells us, that for a 44 bit collision
-    # with a 0.5 probability we need N = 1.17*sqrt(2**44) = 5 000 000
-    # hashes
+    # the birthday paradox tells us that a 44 bit collision
+    # with a 0.5 probability requires approximately
+    # N = 1.17*sqrt(2**44) = 5 000 000 hashes
     N = 5*10**6
 
-    #order
+    #order of search (10^o, 10^O)
     o = 0
     O = 10
 
     for i in range(N):
+        # just some prints to see what is happening and how fast
         if i % 1000 == 0:
             print('.', end='')
         if i % 10000 == 0:
             print('#', end='')
         if i % 100000 == 0:
             print(str(i))
+        # random collision candidate
         t = randint(10**o, 10**O)
         h = sha1hash(str(t))
         h11 = h[0:11]
@@ -111,14 +114,16 @@ def DSA(x):
     # generate public key
     print('Generating q and p...')
     while True:
+        # generate 160-bit prime q
         q = largePrime(160)
         if q != None:
             pflag = False
+            # p has to be 1024-bit and p-1 be divisible by q -> we look at multiples+1
             p = q * (2 ** (1024 - 160)) + 1
             while p < 2**1024:
                 # q has to divide p-1
                 print('.', end='')
-                if MillerRabin(p):
+                if MillerRabin(p, 100):
                     pflag = True
                     break
                 p = p + q
@@ -131,6 +136,7 @@ def DSA(x):
     while True:
         h = randint(2, p-1)
         ee = extendedEuclid(h, p, p)
+        # check if h if invertible in Z_p*
         if ee[2] != 1:
             continue
         else:
@@ -163,7 +169,7 @@ def DSA(x):
         if gamma != 0 and delta != 0:
             print('Signature generated!')
             print(str(gamma), str(delta))
-            return((x, gamma, delta))
+            return(x, gamma, delta, p, q, alpha, beta)
 
 ### TESTS ###
 #FindCollision11()
@@ -174,4 +180,4 @@ def DSA(x):
 # Success: 892749168 8481945962
 # Success: 6164887277 7267728681
 
-DSA('6177009668 7240624942')
+(x, gamma, delta, p, q, alpha, beta) = DSA('6177009668 7240624942')

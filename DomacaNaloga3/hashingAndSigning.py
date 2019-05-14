@@ -181,3 +181,30 @@ def DSA(x):
 # Success: 6164887277 7267728681
 
 (x, gamma, delta, p, q, alpha, beta) = DSA('6177009668 7240624942')
+
+vpisna = '27161070'
+hxi = int(sha1hash('6177009668 7240624942'), 16)
+prevh = '000000039e94ec13109ac8832961a6840b43f96d'
+
+block = '6177009668 7240624942 '+str(hxi)+'\n'
+block += vpisna+' '+str(gamma)+' '+str(delta)+'\n'
+block += prevh+'\n'
+
+while True:
+    print('.', end='')
+    ext = 1
+    h = sha1hash(block + str(ext))
+    if str(h[0:7]) == '0000000' and str(h[7]) in {'0', '1', '2', '3'}:
+        block = block + ext
+        break
+    ext += 1
+
+print('Public key:')
+print(vpisna)
+print(str(p))
+print(str(q))
+print(str(alpha))
+print(str(beta))
+
+print('Block:')
+print(block)

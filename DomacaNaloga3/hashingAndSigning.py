@@ -78,6 +78,8 @@ def largePrime(b, tries=1000, mrt = 100):
 
 # refer to the tests section for some collision (bottom)
 def FindCollision11(hs = {}):
+    '''Finds 11-hexdec (44-bit) collision of the SHA1 hash function
+        exploiting the birthday paradox.'''
     HDICT11 = hs
 
     # how many searches?
@@ -111,6 +113,7 @@ def FindCollision11(hs = {}):
     return None
 
 def DSA(x):
+    '''Generates key for the DSA protocol and signs x.'''
     # generate public key
     print('Generating q and p...')
     while True:
